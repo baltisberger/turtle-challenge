@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+    <title>p4-robot-module</title>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" type="text/javascript"></script>
+    <script src="/skulpt/dist/skulpt.min.js" type="text/javascript"></script>
+    <script src="/skulpt/dist/skulpt-stdlib.js" type="text/javascript"></script>
+    <script src="https://pagecdn.io/lib/ace/1.4.12/ace.js" type="text/javascript" charset="utf-8"></script>
+
+    <style type="text/css" media="screen">
+        body {
+            margin: 20px;
+        }
+
+        .flex-container {
+            display: flex;
+            margin: 20px 0px;
+            height: 500px;
+        }
+
+        .skulpt-column {
+            width: 50%;
+        }
+
+        #editor {
+            position: relative;
+            height: 100%;
+            border: 1px solid grey;
+        }
+
+        #canvas {   
+            height: 400px;
+            border: 1px solid grey;
+        }
+
+        #output {
+            height: 98px;
+            border: 1px solid grey;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <button type="button" onclick="runCode()">Run code</button>
+
+    <div class="flex-container">
+        <div class="skulpt-column">
+            <div id="editor">import robot
+
+screen = robot.Screen()
+screen.setup(600, 400)
+screen.bgcolor("lightblue")
+
+rob = robot.Robot()
+rob.shape("turtle")
+print(rob.hello())
+
+for i in range(0, 4):
+    rob.forward(100)
+    rob.left(90)
+
+def up():
+    rob.forward(10)
+
+def down():
+    rob.backward(10)
+
+def left():
+    rob.left(10)
+
+def right():
+    rob.right(10)
+
+screen.onkey(up, 'Up')
+screen.onkey(down, 'Down')
+screen.onkey(left, 'Left')
+screen.onkey(right, 'Right')
+
+screen.listen()</div>
+        </div>
+        <div class="skulpt-column">
+            <div id="canvas"></div>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+
+        // editor
+        var editor = ace.edit("editor");
+        editor.session.setMode("ace/mode/python");
+        editor.setShowPrintMargin(false);
+        //editor.setTheme("ace/theme/monokai");
+
+        // console
+        var output = ace.edit("output");
+        output.session.setMode("ace/mode/plain_text");
+        output.setShowPrintMargin(false);
+        output.renderer.setShowGutter(false);
+
+        // functions
+
+        function outf(text) {
+            var mypre = editor.getValue();
+            mypre.innerHTML = mypre.innerHTML + text;
+        }
+
+        function builtinRead(x) {
+            if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+                throw "File not found: '" + x + "'";
+            return Sk.builtinFiles["files"][x];
+        }
+
+        function runCode() {
+            var prog = editor.getValue();
+            output.session.setValue("");
+            Sk.pre = "output";
+            Sk.configure({
+                output: function (text) {
+                    output.insert(text);
+                    output.prevCursorPosition = output.getCursorPosition();
+                    output.session.setUndoManager(new ace.UndoManager());
+                },
+                read: builtinRead,
+            });
+            (Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'canvas';
+            var myPromise = Sk.misceval.asyncToPromise(function () {
+                return Sk.importMainWithBody("<stdin>", false, prog, true);
+            });
+            myPromise.then(function (mod) {
+                console.log('success');
+            },
+                function (err) {
+                    console.log(err.toString());
+                    $("#output").text(err.toString());
+                });
+        }
+
+    </script>
+
+</body>
+
+</html>
